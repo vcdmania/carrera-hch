@@ -267,13 +267,13 @@ function construirEval(){
   h+='</table></div><div style="font-size:10.5px;color:#889;margin-top:5px">Un día = ruido: no leas mucho un solo número. Lo real es la tendencia de muchas jornadas.</div></div>';
   return h;
 }
-let HIST=null, histVisible=false, HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:''};
+let HIST=null, histVisible=false, HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:'',niv:''};
 function toggleHist(){
   histVisible=!histVisible;
   const box=document.getElementById('hist-box'),btn=document.getElementById('btn-hist');
   if(!histVisible){box.style.display='none';btn.textContent='📈 Historial del motor (largo plazo)';return;}
   btn.textContent='🔼 Ocultar historial';box.style.display='block';
-  HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:''};
+  HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:'',niv:''};
   if(HIST){renderHist();return;}
   box.innerHTML='<div style="padding:10px;color:#557">Cargando historial...</div>';
   fetch('historial.json').then(r=>r.json()).then(h=>{HIST=h;renderHist();})
@@ -286,6 +286,9 @@ function renderHist(){
   const S=HSTATE, col=r=>r>0?'#1c7a3f':(r<0?'#c0392b':'#888'), CB=H.combos||{};
   const meses=[...new Set(H.jornadas.map(j=>j.fecha.slice(0,7)))].sort().reverse();
   const dists=[...new Set(H.jornadas.flatMap(j=>j.carreras.map(c=>c.dist)).filter(x=>x))].sort((a,b)=>a-b);
+  const nivs=H.jornadas.flatMap(j=>j.carreras.map(c=>c.niv).filter(x=>x!=null)).sort((a,b)=>a-b);
+  const nq=p=>nivs.length?nivs[Math.floor(nivs.length*p)]:null, c33=nq(.33), c66=nq(.66);
+  const nivBand=v=>(v==null||c33==null)?null:(v<=c33?'bajo':(v<=c66?'medio':'alto'));
   let h='<style>.ev{background:#fff;border:1px solid #1b3a63;border-radius:9px;padding:10px;margin-top:2px}.ev h4{margin:2px 0 6px;color:#0a2756;font-size:14px}.ev table{border-collapse:collapse;width:100%;font-size:11.5px}.ev th,.ev td{border:1px solid #e3e7ee;padding:4px 6px;text-align:center}.ev .l{text-align:left}.evs{overflow:auto;border:1px solid #1b3a63;border-radius:7px;margin-top:5px}.ev th{background:#0a2756;color:#d4af37}.ev .ok{color:#1c7a3f;font-weight:bold}.ev .no{color:#c0392b}.ev .na{color:#bbb}.ev select{padding:3px 5px;border-radius:6px;border:1px solid #1b3a63;font-size:11.5px}.ev .fl{font-size:11px;color:#456;display:flex;flex-wrap:wrap;gap:5px 10px;margin-bottom:7px;align-items:center}</style>';
   h+='<div class="ev"><h4>📈 Historial del motor</h4>';
   const sel=(k,opts)=>`<select onchange="hset('${k}',this.value)">${opts}</select>`;
@@ -299,6 +302,7 @@ function renderHist(){
   h+='<span>Luz: '+sel('luz',`<option value="">Todas</option><option value="dia"${S.luz==='dia'?' selected':''}>☀️ Día</option><option value="noche"${S.luz==='noche'?' selected':''}>🌙 Noche</option>`)+'</span>';
   h+='<span>Día: '+sel('dow',`<option value="">Todos</option><option value="3"${S.dow==='3'?' selected':''}>Jueves</option><option value="5"${S.dow==='5'?' selected':''}>Sábado</option>`)+'</span>';
   h+='<span>Dist: '+sel('dist','<option value="">Todas</option>'+dists.map(d=>`<option value="${d}"${S.dist===String(d)?' selected':''}>${d}m</option>`).join(''))+'</span>';
+  if(nivs.length) h+='<span>Índice: '+sel('niv',`<option value="">Todos</option><option value="bajo"${S.niv==='bajo'?' selected':''}>🟢 Bajo</option><option value="medio"${S.niv==='medio'?' selected':''}>🟡 Medio</option><option value="alto"${S.niv==='alto'?' selected':''}>🔴 Alto</option>`)+'</span>';
   h+='</div>';
   let races=[], njor=new Set();
   H.jornadas.forEach(j=>{
@@ -309,13 +313,14 @@ function renderHist(){
       if(S.luz==='dia' && c.noc!==false) return;
       if(S.luz==='noche' && c.noc!==true) return;
       if(S.dist!=='' && c.dist!==+S.dist) return;
+      if(S.niv!=='' && nivBand(c.niv)!==S.niv) return;
       races.push(c); njor.add(j.fecha);
     });
   });
   const ag={}; H.apuestas.forEach(a=>ag[a]=[0,0,0,0]);   // costo, cobro, n(jugadas), h(aciertos)
   races.forEach(c=>{ if(c.co) H.apuestas.forEach(a=>{ if(a in c.co){const g=ag[a]; g[0]+=(CB[a]||1)*200; g[1]+=c.co[a]; g[2]++; if(c.co[a]>0)g[3]++;} }); });
-  h+='<table><tr><th class="l">Apuesta</th><th>aciertos</th><th>cobré</th><th>ROI</th></tr>';
-  H.apuestas.forEach(a=>{const g=ag[a]; if(!g[0])return; const roi=(g[1]/g[0]-1)*100; h+=`<tr><td class="l">${a}</td><td>${g[3]}/${g[2]}</td><td>$${Math.round(g[1]).toLocaleString('es-CL')}</td><td style="color:${col(roi)};font-weight:bold">${roi>0?'+':''}${Math.round(roi)}%</td></tr>`;});
+  h+='<table><tr><th class="l">Apuesta</th><th>aciertos</th><th>aposté</th><th>cobré</th><th>ROI</th></tr>';
+  H.apuestas.forEach(a=>{const g=ag[a]; if(!g[0])return; const roi=(g[1]/g[0]-1)*100; h+=`<tr><td class="l">${a}</td><td>${g[3]}/${g[2]}</td><td style="color:#889">$${Math.round(g[0]).toLocaleString('es-CL')}</td><td>$${Math.round(g[1]).toLocaleString('es-CL')}</td><td style="color:${col(roi)};font-weight:bold">${roi>0?'+':''}${Math.round(roi)}%</td></tr>`;});
   h+='</table>';
   h+=`<div style="font-size:10.5px;color:#889;margin-top:6px">${races.length} carreras · ${njor.size} jornadas. Filtra y compara. A la larga nada gana parejo — un día bueno no cambia esto.</div>`;
   if(S.fecha && races.length){
