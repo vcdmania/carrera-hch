@@ -178,6 +178,7 @@
     <button id="toggle-all" onclick="toggleAll()">Expandir</button>
   </div>
   <div class="prog"><div id="rows"></div></div>
+  <div class="apuestas-box" id="apuestas-box"></div>
   <div class="notas-box" id="notas-box"></div>
   <div class="reco" id="reco"></div>
   <div class="foot">Toca un caballo para su ficha y campaña (desliza la tabla para ver más). Toca el código de una carrera pasada para marcar qué otros caballos de ESTA carrera también corrieron en ella. Dividendos: escríbelos en el recuadro amarillo cuando se formen.</div>
@@ -273,30 +274,40 @@ function construirEval(){
   h+='</table></div><div style="font-size:10.5px;color:#889;margin-top:5px">Un día = ruido: no leas mucho un solo número. Lo real es la tendencia de muchas jornadas.</div></div>';
   return h;
 }
-let HIST=null, histVisible=false, HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:'',niv:''};
+let HIST=null, histVisible=false, HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:'',niv:'',modo:'motor',anios:[]};
 function toggleHist(){
   histVisible=!histVisible;
   const box=document.getElementById('hist-box'),btn=document.getElementById('btn-hist');
   if(!histVisible){box.style.display='none';btn.textContent='📈 Historial del motor (largo plazo)';return;}
   btn.textContent='🔼 Ocultar historial';box.style.display='block';
-  HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:'',niv:''};
+  HSTATE={mes:'',fecha:'',luz:'',dow:'',dist:'',niv:'',modo:'motor',anios:[]};
   if(HIST){renderHist();return;}
   box.innerHTML='<div style="padding:10px;color:#557">Cargando historial...</div>';
-  fetch('historial.json').then(r=>r.json()).then(h=>{HIST=h;renderHist();})
+  fetch('historial_hist.json').then(r=>r.json()).then(h=>{HIST=h;renderHist();})
     .catch(e=>{box.innerHTML='<div style="padding:10px;color:#c0392b">No pude cargar el historial (¿publicado?).</div>';});
 }
 function hset(k,v){HSTATE[k]=v; if(k==='mes')HSTATE.fecha=''; renderHist();}
+function hsetAnio(a){const i=HSTATE.anios.indexOf(a); if(i<0)HSTATE.anios.push(a); else HSTATE.anios.splice(i,1); renderHist();}
 const H_COLS=[["Quinela t3","Q3"],["Quinela t4","Q4"],["Exacta t3","X3"],["Trifecta t3","T3"],["Trifecta t4","T4"],["Trifecta t5","T5"],["Superfecta t4","S4"],["Superfecta t5","S5"]];
 function renderHist(){
   const box=document.getElementById('hist-box'),H=HIST; if(!H)return;
   const S=HSTATE, col=r=>r>0?'#1c7a3f':(r<0?'#c0392b':'#888'), CB=H.combos||{};
   const meses=[...new Set(H.jornadas.map(j=>j.fecha.slice(0,7)))].sort().reverse();
+  const anios=[...new Set(H.jornadas.map(j=>j.anio).filter(x=>x))].sort();
   const dists=[...new Set(H.jornadas.flatMap(j=>j.carreras.map(c=>c.dist)).filter(x=>x))].sort((a,b)=>a-b);
   const nivs=H.jornadas.flatMap(j=>j.carreras.map(c=>c.niv).filter(x=>x!=null)).sort((a,b)=>a-b);
   const nq=p=>nivs.length?nivs[Math.floor(nivs.length*p)]:null, c33=nq(.33), c66=nq(.66);
   const nivBand=v=>(v==null||c33==null)?null:(v<=c33?'bajo':(v<=c66?'medio':'alto'));
   let h='<style>.ev{background:#fff;border:1px solid #1b3a63;border-radius:9px;padding:10px;margin-top:2px}.ev h4{margin:2px 0 6px;color:#0a2756;font-size:14px}.ev table{border-collapse:collapse;width:100%;font-size:11.5px}.ev th,.ev td{border:1px solid #e3e7ee;padding:4px 6px;text-align:center}.ev .l{text-align:left}.evs{overflow:auto;border:1px solid #1b3a63;border-radius:7px;margin-top:5px}.ev th{background:#0a2756;color:#d4af37}.ev .ok{color:#1c7a3f;font-weight:bold}.ev .no{color:#c0392b}.ev .na{color:#bbb}.ev select{padding:3px 5px;border-radius:6px;border:1px solid #1b3a63;font-size:11.5px}.ev .fl{font-size:11px;color:#456;display:flex;flex-wrap:wrap;gap:5px 10px;margin-bottom:7px;align-items:center}</style>';
-  h+='<div class="ev"><h4>📈 Historial del motor</h4>';
+  const MM=S.modo||'motor';
+  h+='<div class="ev"><h4>📈 Historial — '+(MM==='mercado'?'caja de mercado (mejorado)':'motor (lo de hoy)')+'</h4>';
+  const tgb=(m,txt)=>`<button onclick="hset('modo','${m}')" style="flex:1;padding:6px;font-size:12px;border:1px solid #0a2756;background:${MM===m?'#0a2756':'#fff'};color:${MM===m?'#d4af37':'#0a2756'};font-weight:${MM===m?'bold':'normal'};cursor:pointer;${m==='motor'?'border-radius:6px 0 0 6px':'border-radius:0 6px 6px 0;border-left:none'}">${txt}</button>`;
+  h+=`<div style="display:flex;margin-bottom:8px">${tgb('motor','Motor (hoy)')}${tgb('mercado','Mercado (mejorado)')}</div>`;
+  if(MM==='motor') h+='<div style="font-size:10.5px;color:#b26a00;background:#fff6e6;border:1px solid #e0c98a;border-radius:6px;padding:6px;margin-bottom:7px">⚠️ Motor <b>reconstruido hacia atrás</b> (coeficientes actuales aplicados al pasado = optimista, algo de leakage). No es el motor en vivo; sirve para comparar.</div>';
+  else h+='<div style="font-size:10.5px;color:#b26a00;background:#fff6e6;border:1px solid #e0c98a;border-radius:6px;padding:6px;margin-bottom:7px">⚠️ Caja de mercado (tabla media). Con 17k carreras y validación año a año, <b>nada cruza a positivo estable</b>: pierde poco, no gana. El bajo índice pierde menos.</div>';
+  h+='<div style="font-size:11px;color:#456;margin-bottom:3px">Años (toca varios para filtrar):</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
+  anios.forEach(a=>{const on=S.anios.includes(a); h+=`<button onclick="hsetAnio(${a})" style="padding:3px 8px;font-size:11px;border:1px solid #0a2756;border-radius:5px;background:${on?'#0a2756':'#fff'};color:${on?'#d4af37':'#0a2756'};font-weight:${on?'bold':'normal'};cursor:pointer">${a}</button>`;});
+  h+=`${S.anios.length?'<button onclick="HSTATE.anios=[];renderHist()" style="padding:3px 8px;font-size:11px;border:1px solid #c0392b;border-radius:5px;background:#fff;color:#c0392b;cursor:pointer">✕</button>':''}</div>`;
   const sel=(k,opts)=>`<select onchange="hset('${k}',this.value)">${opts}</select>`;
   let mo='<option value="">📊 Acumulado</option>'+meses.map(m=>`<option value="${m}"${S.mes===m?' selected':''}>${m}</option>`).join('');
   h+='<div class="fl"><span>Período: '+sel('mes',mo)+'</span>';
@@ -312,6 +323,7 @@ function renderHist(){
   h+='</div>';
   let races=[], njor=new Set();
   H.jornadas.forEach(j=>{
+    if(S.anios.length && !S.anios.includes(j.anio)) return;
     if(S.mes && j.fecha.slice(0,7)!==S.mes) return;
     if(S.fecha && j.fecha!==S.fecha) return;
     if(S.dow!=='' && j.dow!==+S.dow) return;
@@ -323,8 +335,9 @@ function renderHist(){
       races.push(c); njor.add(j.fecha);
     });
   });
+  const FU=(MM==='mercado')?'com':'co';
   const ag={}; H.apuestas.forEach(a=>ag[a]=[0,0,0,0]);   // costo, cobro, n(jugadas), h(aciertos)
-  races.forEach(c=>{ if(c.co) H.apuestas.forEach(a=>{ if(a in c.co){const g=ag[a]; g[0]+=(CB[a]||1)*200; g[1]+=c.co[a]; g[2]++; if(c.co[a]>0)g[3]++;} }); });
+  races.forEach(c=>{ const src=c[FU]; if(src) H.apuestas.forEach(a=>{ if(a in src){const g=ag[a]; g[0]+=(CB[a]||1)*200; g[1]+=src[a]; g[2]++; if(src[a]>0)g[3]++;} }); });
   h+='<table><tr><th class="l">Apuesta</th><th>aciertos</th><th>aposté</th><th>cobré</th><th>ROI</th></tr>';
   const money=v=>{v=Math.round(v); return v>=1e6?('$'+(v/1e6).toFixed(1)+'M'):('$'+v.toLocaleString('es-CL'));};
   const pctSpan=(h_,n_)=>`<span style="font-size:9px;color:#889">(${n_?Math.round(h_/n_*100):0}%)</span>`;
@@ -339,7 +352,7 @@ function renderHist(){
   if(S.fecha && races.length){
     h+='<div style="margin:8px 0 3px;font-size:11px;color:#557">Matriz de apuestas — desliza →</div>';
     h+='<div class="evs"><table><tr><th>Carrera</th>'+H_COLS.map(c=>`<th>${c[1]}</th>`).join('')+'</tr>';
-    races.forEach(c=>{h+=`<tr><td>C${c.c}${c.noc?' 🌙':''}</td>`+H_COLS.map(cc=>{const v=c.co?c.co[cc[0]]:undefined;const cls=(v===undefined)?'na':(v>0?'ok':'no');return `<td class="${cls}">${v===undefined?'–':(v>0?'✓':'✗')}</td>`;}).join('')+'</tr>';});
+    races.forEach(c=>{h+=`<tr><td>C${c.c}${c.noc?' 🌙':''}</td>`+H_COLS.map(cc=>{const v=c[FU]?c[FU][cc[0]]:undefined;const cls=(v===undefined)?'na':(v>0?'ok':'no');return `<td class="${cls}">${v===undefined?'–':(v>0?'✓':'✗')}</td>`;}).join('')+'</tr>';});
     h+='</table></div>';
   }
   h+='</div>'; box.innerHTML=h;
@@ -572,9 +585,63 @@ function render(){
   nb.innerHTML=`<label>📝 Mis notas y apuestas — Carrera ${actual.correlativo}</label>
     <textarea placeholder="Ej: voy al 3 a ganador, 5-7 al place... lo que conversamos con mi papá..." oninput="setNota(this.value)">${notaVal}</textarea>
     <div class="hint">Se guarda mientras no cierres la app. Para no perderlas, anótalas también aparte.</div>`;
+  armarApuestas(analisis);
 }
 
 function setNota(val){ notasPorCarrera[actual.id]=val; }
+
+// === ARMADOR DE APUESTAS ============================================
+// Cajas validadas por backtest (1211 carreras). ranks: 1=favorito (menor dividendo).
+// Solo las de mejor ROI honesto. Ficha plana $200/pata (ponderar NO ayuda en estas cajas).
+const CAJAS_APU={
+  mejorado:[
+    {nom:"Exacta",     ranks:[2,3,8],     k:2, roi:"+2%"},
+    {nom:"Trifecta t5",ranks:[2,3,5,7,8], k:3, roi:"+13%"},
+    {nom:"Trifecta t4",ranks:[3,5,7,8],   k:3, roi:"+33%"}
+  ],
+  normal:[
+    {nom:"Exacta",     ranks:[1,2,3],     k:2, roi:"−28%"},
+    {nom:"Trifecta t5",ranks:[1,2,3,4,5], k:3, roi:"−35%"},
+    {nom:"Trifecta t4",ranks:[1,2,3,4],   k:3, roi:"−43%"}
+  ]
+};
+let modoApu='mejorado';
+function setModoApu(m){ modoApu=m; armarApuestas(analisis); }
+function nPatas(N,k){ let p=1; for(let i=0;i<k;i++) p*=(N-i); return p; }  // permutaciones (combinada ordenada)
+let _apuTexto='';
+function armarApuestas(a){
+  const box=document.getElementById('apuestas-box'); if(!box) return;
+  if(!actual.es_handicap){ box.innerHTML=''; return; }
+  const rk=a.filter(h=>h.div>0).sort((x,y)=>x.div-y.div);   // ranking por favoritismo
+  const H=`<div style="font-weight:800;color:#d4af37">🎯 Armar apuestas</div>`;
+  if(rk.length<3){ box.innerHTML=H+`<div style="font-size:12px;color:#9fb0c8;margin-top:4px">Carga los dividendos (recuadro amarillo) para generar las combinaciones.</div>`; return; }
+  const tg=(m,txt)=>`<button onclick="setModoApu('${m}')" style="flex:1;padding:5px;font-size:11px;border:1px solid #d4af37;background:${modoApu===m?'#d4af37':'transparent'};color:${modoApu===m?'#0d2340':'#d4af37'};font-weight:${modoApu===m?'800':'400'};cursor:pointer;${m==='mejorado'?'border-radius:6px 0 0 6px':'border-radius:0 6px 6px 0;border-left:none'}">${txt}</button>`;
+  let html=H+`<div style="font-size:11px;color:#9fb0c8;margin:2px 0 5px">$200 por pata · ROI histórico 1211 carreras (en validación)</div>`;
+  html+=`<div style="display:flex;margin-bottom:8px">${tg('mejorado','✓ Mejorado (tabla media)')}${tg('normal','Normal (favoritos)')}</div>`;
+  html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">`+rk.map((h,i)=>
+    `<span style="background:#0d2340;border:1px solid #24456f;border-radius:5px;padding:2px 6px;font-size:11px">${i+1}º <b>#${h.mandil}</b> <span style="color:#7f93ad">${h.div.toFixed(1)}</span></span>`).join('')+`</div>`;
+  _apuTexto=`Carrera ${actual.correlativo} (id ${actual.id})\nRanking: `+rk.map((h,i)=>`${i+1}º#${h.mandil}(${h.div.toFixed(1)})`).join(' ')+`\n`;
+  _apuTexto+=`Modo: ${modoApu}\n`;
+  CAJAS_APU[modoApu].forEach(c=>{
+    const need=Math.max(...c.ranks);
+    if(rk.length<need){ html+=`<div style="font-size:11.5px;color:#6f8199;padding:4px 0">${c.nom}: necesita ${need} caballos con dividendo (hay ${rk.length})</div>`; return; }
+    const mand=c.ranks.map(r=>rk[r-1].mandil);
+    const np=nPatas(mand.length,c.k), costo=np*200;
+    const cr=c.roi.indexOf('−')<0?'#4ec07a':'#c0748a';
+    html+=`<div style="background:#0d2340;border-left:3px solid #d4af37;border-radius:6px;padding:7px 9px;margin-bottom:6px">
+      <div style="font-size:14px"><b style="color:#fff">${c.nom} combinada</b> · <span style="color:#d4af37;font-weight:800;letter-spacing:1px">${mand.join(' - ')}</span></div>
+      <div style="font-size:11.5px;color:#9fb0c8;margin-top:3px">${np} patas · <b style="color:#fff">$${costo.toLocaleString('es-CL')}</b> · ROI hist <b style="color:${cr}">${c.roi}</b></div></div>`;
+    _apuTexto+=`${c.nom}: ${mand.join('-')} (${np} patas, $${costo}, ROI ${c.roi})\n`;
+  });
+  html+=`<div style="font-size:10.5px;color:#6f8199;margin:2px 0 6px">ROI con dividendo de cierre; en vivo cargas el provisional. Aún en validación — anota lo jugado para cotejar.</div>`;
+  html+=`<button onclick="copiarApuestas()" style="background:#11315f;color:#d4af37;border:1px solid #d4af37;border-radius:7px;padding:7px 12px;font-size:12.5px;cursor:pointer;width:100%">📋 Copiar apuestas al registro</button>`;
+  box.innerHTML=html;
+}
+function copiarApuestas(){
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(_apuTexto).then(()=>{
+    const b=event.target; const t=b.textContent; b.textContent='✓ Copiado'; setTimeout(()=>b.textContent=t,1200);
+  }).catch(()=>alert(_apuTexto)); } else alert(_apuTexto);
+}
 
 function setDiv(mandil,val){
   if(!divsPorCarrera[actual.id]) divsPorCarrera[actual.id]={};
