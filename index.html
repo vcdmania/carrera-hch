@@ -302,6 +302,7 @@ function renderHist(){
   const meses=[...new Set(H.jornadas.map(j=>j.fecha.slice(0,7)))].sort().reverse();
   const anios=[...new Set(H.jornadas.map(j=>j.anio).filter(x=>x))].sort();
   const dists=[...new Set(H.jornadas.flatMap(j=>j.carreras.map(c=>c.dist)).filter(x=>x))].sort((a,b)=>a-b);
+  const hayNiv=H.jornadas.some(j=>j.carreras.some(c=>c.niv!=null));
   // banda de indice POR AÑO (def unica, robusta a inflacion): cada carrera contra los cortes de su año
   const nivBand=(v,anio)=>{const C=cutsAnio(anio); return (v==null||!C)?null:(v<=C[0]?'bajo':(v<=C[1]?'medio':'alto'));};
   let h='<style>.ev{background:#fff;border:1px solid #1b3a63;border-radius:9px;padding:10px;margin-top:2px}.ev h4{margin:2px 0 6px;color:#0a2756;font-size:14px}.ev table{border-collapse:collapse;width:100%;font-size:11.5px}.ev th,.ev td{border:1px solid #e3e7ee;padding:4px 6px;text-align:center}.ev .l{text-align:left}.evs{overflow:auto;border:1px solid #1b3a63;border-radius:7px;margin-top:5px}.ev th{background:#0a2756;color:#d4af37}.ev .ok{color:#1c7a3f;font-weight:bold}.ev .no{color:#c0392b}.ev .na{color:#bbb}.ev select{padding:3px 5px;border-radius:6px;border:1px solid #1b3a63;font-size:11.5px}.ev .fl{font-size:11px;color:#456;display:flex;flex-wrap:wrap;gap:5px 10px;margin-bottom:7px;align-items:center}</style>';
@@ -325,7 +326,7 @@ function renderHist(){
   h+='<span>Luz: '+sel('luz',`<option value="">Todas</option><option value="dia"${S.luz==='dia'?' selected':''}>☀️ Día</option><option value="noche"${S.luz==='noche'?' selected':''}>🌙 Noche</option>`)+'</span>';
   h+='<span>Día: '+sel('dow',`<option value="">Todos</option><option value="3"${S.dow==='3'?' selected':''}>Jueves</option><option value="5"${S.dow==='5'?' selected':''}>Sábado</option>`)+'</span>';
   h+='<span>Dist: '+sel('dist','<option value="">Todas</option>'+dists.map(d=>`<option value="${d}"${S.dist===String(d)?' selected':''}>${d}m</option>`).join(''))+'</span>';
-  if(nivs.length) h+='<span>Índice: '+sel('niv',`<option value="">Todos</option><option value="bajo"${S.niv==='bajo'?' selected':''}>🟢 Bajo</option><option value="medio"${S.niv==='medio'?' selected':''}>🟡 Medio</option><option value="alto"${S.niv==='alto'?' selected':''}>🔴 Alto</option>`)+'</span>';
+  if(hayNiv) h+='<span>Índice: '+sel('niv',`<option value="">Todos</option><option value="bajo"${S.niv==='bajo'?' selected':''}>🟢 Bajo</option><option value="medio"${S.niv==='medio'?' selected':''}>🟡 Medio</option><option value="alto"${S.niv==='alto'?' selected':''}>🔴 Alto</option>`)+'</span>';
   h+='</div>';
   let races=[], njor=new Set();
   H.jornadas.forEach(j=>{
