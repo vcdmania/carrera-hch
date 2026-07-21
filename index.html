@@ -701,9 +701,16 @@ function copiarTri(){
 function setDiv(mandil,val){
   if(!divsPorCarrera[actual.id]) divsPorCarrera[actual.id]={};
   divsPorCarrera[actual.id][mandil]=parseFloat(val)||0;
+  guardarDivs();
   analisis=analizar(actual); pick=actual.es_handicap?pickModelo(analisis):null;
-  clearTimeout(window._t); window._t=setTimeout(render,600);
+  // solo actualizamos el cuadro de la trifecta — NO redibujamos las filas
+  // (si redibujáramos, el input pierde el foco y en el celu se cierra el teclado)
+  clearTimeout(window._t); window._t=setTimeout(()=>{try{armarTrifecta(analisis);}catch(e){}},400);
 }
+// --- persistencia: las cuotas cargadas sobreviven a cerrar la app (guardadas por jornada) ---
+function _kDivs(){return 'divs_'+(DATA.fecha||'x');}
+function guardarDivs(){try{localStorage.setItem(_kDivs(),JSON.stringify(divsPorCarrera));}catch(e){}}
+function cargarDivs(){try{const s=localStorage.getItem(_kDivs());if(s)divsPorCarrera=JSON.parse(s)||{};}catch(e){}}
 function marcarCodigo(cod){
   marcados=new Set();
   actual.caballos.forEach(h=>{ if((h.ultimas5||[]).some(u=>u.id_carrera===cod)) marcados.add(h.mandil); });
@@ -712,6 +719,7 @@ function marcarCodigo(cod){
 }
 function toggleAll(){allOpen=!allOpen;document.querySelectorAll('#rows .row-det').forEach(d=>d.classList.toggle('open',allOpen));document.getElementById('toggle-all').textContent=allOpen?'Contraer':'Expandir';}
 function volver(){document.getElementById('detalle').classList.remove('active');document.getElementById('lista').style.display='block';window.scrollTo(0,0);}
+cargarDivs();
 renderLista();
 </script>
 </body>
