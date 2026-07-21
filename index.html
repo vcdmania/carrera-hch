@@ -178,9 +178,7 @@
     <button id="toggle-all" onclick="toggleAll()">Expandir</button>
   </div>
   <div class="prog"><div id="rows"></div></div>
-  <div class="apuestas-box" id="apuestas-box"></div>
   <div class="apuestas-box" id="trifecta-box"></div>
-  <div class="notas-box" id="notas-box"></div>
   <div class="reco" id="reco"></div>
   <div class="foot">Toca un caballo para su ficha y campaña (desliza la tabla para ver más). Toca el código de una carrera pasada para marcar qué otros caballos de ESTA carrera también corrieron en ella. Dividendos: escríbelos en el recuadro amarillo cuando se formen.</div>
 </div>
@@ -589,13 +587,6 @@ function render(){
     }else hh+=`<div class="l pass">Escribe los dividendos para comparar con el mercado.</div>`;
     reco.innerHTML=hh;
   }
-  // cuadro de notas/apuestas de la carrera
-  const nb=document.getElementById('notas-box');
-  const notaVal=notasPorCarrera[actual.id]||'';
-  nb.innerHTML=`<label>📝 Mis notas y apuestas — Carrera ${actual.correlativo}</label>
-    <textarea placeholder="Ej: voy al 3 a ganador, 5-7 al place... lo que conversamos con mi papá..." oninput="setNota(this.value)">${notaVal}</textarea>
-    <div class="hint">Se guarda mientras no cierres la app. Para no perderlas, anótalas también aparte.</div>`;
-  armarApuestas(analisis);
   armarTrifecta(analisis);
 }
 
