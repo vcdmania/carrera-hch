@@ -179,6 +179,7 @@
   </div>
   <div class="prog"><div id="rows"></div></div>
   <div class="apuestas-box" id="apuestas-box"></div>
+  <div class="apuestas-box" id="trifecta-box"></div>
   <div class="notas-box" id="notas-box"></div>
   <div class="reco" id="reco"></div>
   <div class="foot">Toca un caballo para su ficha y campaña (desliza la tabla para ver más). Toca el código de una carrera pasada para marcar qué otros caballos de ESTA carrera también corrieron en ella. Dividendos: escríbelos en el recuadro amarillo cuando se formen.</div>
@@ -595,6 +596,7 @@ function render(){
     <textarea placeholder="Ej: voy al 3 a ganador, 5-7 al place... lo que conversamos con mi papá..." oninput="setNota(this.value)">${notaVal}</textarea>
     <div class="hint">Se guarda mientras no cierres la app. Para no perderlas, anótalas también aparte.</div>`;
   armarApuestas(analisis);
+  armarTrifecta(analisis);
 }
 
 function setNota(val){ notasPorCarrera[actual.id]=val; }
@@ -650,6 +652,59 @@ function copiarApuestas(){
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(_apuTexto).then(()=>{
     const b=event.target; const t=b.textContent; b.textContent='✓ Copiado'; setTimeout(()=>b.textContent=t,1200);
   }).catch(()=>alert(_apuTexto)); } else alert(_apuTexto);
+}
+
+// === TRIFECTA FILTRADA (edge +10,7% validado: caja t5 del motor + corte de combos que pagan < $20k) ===
+function bandaStr(v){
+  var anio=(typeof DATA!=='undefined'&&DATA.fecha)?String(DATA.fecha).slice(0,4):null;
+  var C=cutsAnio(anio); if(v==null||!C) return null;
+  return v<=C[0]?'bajo':(v<=C[1]?'medio':'alto');
+}
+let _triTexto='';
+function armarTrifecta(a){
+  const box=document.getElementById('trifecta-box'); if(!box) return;
+  // solo Handicap de BAJO indice (donde el edge esta validado)
+  if(!actual.es_handicap || bandaStr(actual.niv)!=='bajo'){ box.innerHTML=''; return; }
+  const H=`<div style="font-weight:800;color:#d4af37">🎯 Trifecta filtrada <span style="font-size:10px;color:#7f93ad;font-weight:400">· edge validado · solo bajo índice</span></div>`;
+  const conP=a.filter(h=>h.pmod>0).sort((x,y)=>y.pmod-x.pmod);
+  if(conP.length<5){ box.innerHTML=H+`<div style="font-size:12px;color:#9fb0c8;margin-top:4px">Necesita 5 caballos con probabilidad del motor.</div>`; return; }
+  const top5=conP.slice(0,5);
+  const chips=top5.map(h=>`<span style="background:#0d2340;border:1px solid #24456f;border-radius:5px;padding:2px 6px;font-size:11px">#<b>${h.mandil}</b> ${h.nombre}${h.div>0?` <span style="color:#7f93ad">${h.div.toFixed(1)}</span>`:` <span style="color:#c0748a">s/cuota</span>`}</span>`).join('');
+  let html=H+`<div style="font-size:11px;color:#9fb0c8;margin:3px 0 5px">Valida en Teletrak que estos 5 (mandil + nombre) sean los mismos:</div>`
+    +`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">${chips}</div>`;
+  const conDiv=a.filter(h=>h.div>0);   // caballos con cuota (igual que generar_trifectas.py)
+  if(!top5.every(h=>h.div>0) || conDiv.length<5){
+    box.innerHTML=html+`<div style="font-size:11.5px;color:#c0748a;margin-top:2px">Cargá los dividendos en el recuadro amarillo. Ojo: cargá los de <b>todos los que largan</b>, no solo el box — si faltan, el corte cambia.</div>`;
+    return;
+  }
+  // prob de mercado normalizada sobre los caballos con cuota (1/dividendo)
+  const inv={}; let s=0;
+  conDiv.forEach(h=>{inv[h.mandil]=1/h.div; s+=inv[h.mandil];});
+  const pm={}; conDiv.forEach(h=>{pm[h.mandil]=inv[h.mandil]/s;});
+  const A=352.5, B=-0.867, UMBRAL=20000, MONTO=200;
+  function harv3(x,y,z){const pa=pm[x],pb=pm[y],pc=pm[z];const d1=1-pa,d2=1-pa-pb;return(d1>1e-9&&d2>1e-9)?pa*(pb/d1)*(pc/d2):0;}
+  const bm=top5.map(h=>h.mandil); const jugar=[],cortar=[];
+  for(const x of bm)for(const y of bm)for(const z of bm){ if(x===y||x===z||y===z) continue;
+    const ph=harv3(x,y,z); const pago=ph>0?A*Math.pow(ph,B):9e18;
+    (pago>=UMBRAL?jugar:cortar).push([x,y,z]); }
+  const cost=jugar.length*MONTO, boxOrd=[...bm].sort((x,y)=>x-y);
+  html+=`<div style="background:#0d2340;border-left:3px solid #d4af37;border-radius:6px;padding:8px 10px;margin-bottom:6px">`
+    +`<div style="font-size:14px"><b style="color:#fff">Box</b> · <span style="color:#d4af37;font-weight:800;letter-spacing:1px">${boxOrd.join(' - ')}</span></div>`;
+  if(cortar.length)
+    html+=`<div style="font-size:11.5px;color:#9fb0c8;margin-top:5px"><b style="color:#fff">Destildá estas ${cortar.length}</b> (pagan menos que la inversión):</div>`
+      +`<div style="font-size:12.5px;color:#e8c66a;margin-top:2px;letter-spacing:.5px">${cortar.map(c=>c.join('-')).join('  ·  ')}</div>`;
+  else
+    html+=`<div style="font-size:11.5px;color:#9fb0c8;margin-top:5px">Van las 60 — cuotas parejas, nada que cortar.</div>`;
+  html+=`<div style="font-size:12px;color:#9fb0c8;margin-top:6px"><b style="color:#fff">${jugar.length} trifectas</b> × $${MONTO} = <b style="color:#4ec07a">$${cost.toLocaleString('es-CL')}</b></div></div>`
+    +`<div style="font-size:10.5px;color:#6f8199;margin:2px 0 6px">Calculado con ${conDiv.length} caballos con cuota. Cargá el Box en Teletrak y destildá las de arriba. El "Apostar ahora" lo confirmás vos.</div>`;
+  _triTexto=`Carrera ${actual.correlativo} (id ${actual.id}) — TRIFECTA filtrada\nBox: ${boxOrd.join('-')}\nDestildar: ${cortar.map(c=>c.join('-')).join(', ')||'(ninguna)'}\n${jugar.length} trifectas x $${MONTO} = $${cost.toLocaleString('es-CL')}`;
+  html+=`<button onclick="copiarTri()" style="background:#11315f;color:#d4af37;border:1px solid #d4af37;border-radius:7px;padding:7px 12px;font-size:12.5px;cursor:pointer;width:100%">📋 Copiar jugada</button>`;
+  box.innerHTML=html;
+}
+function copiarTri(){
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(_triTexto).then(()=>{
+    const b=event.target; const t=b.textContent; b.textContent='✓ Copiado'; setTimeout(()=>b.textContent=t,1200);
+  }).catch(()=>alert(_triTexto)); } else alert(_triTexto);
 }
 
 function setDiv(mandil,val){
