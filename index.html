@@ -501,6 +501,27 @@ function mtzColor(p){
   return `rgb(${r},${g},${b})`;
 }
 
+// "¿Por qué está ahí?" (pedido de Rod 18-ago): las variables que mas mueven la prob del caballo vs el
+// promedio de SU carrera. Discreto, dentro del detalle. OJO: medimos que el puntaje "concentrado" NO
+// es mala señal (los concentrados ganan igual o mas) — esto es informacion, no alerta.
+function porqueMotor(hRow){
+  const m=DATA.modelo; if(!actual.es_handicap||!m) return '';
+  const raw=actual.caballos.find(x=>Number(x.mandil)===Number(hRow.mandil));
+  if(!raw||!raw.prob_modelo) return '';
+  const cabs=actual.caballos.filter(x=>x.prob_modelo);
+  const zs=cabs.map(x=>m.features.map((f,i)=>{
+    let v=x.features?x.features[f]:null; if(v==null||isNaN(v))v=m.medianas[f];
+    return (v-m.scaler_mean[i])/m.scaler_scale[i];
+  }));
+  const zm=m.features.map((_,i)=>zs.reduce((s,z)=>s+z[i],0)/zs.length);
+  const j=cabs.indexOf(raw); if(j<0) return '';
+  const ap=m.features.map((f,i)=>({f,a:(zs[j][i]-zm[i])*m.coef[i]}))
+    .sort((x,y)=>Math.abs(y.a)-Math.abs(x.a)).filter(x=>Math.abs(x.a)>=0.05).slice(0,4);
+  if(!ap.length) return '';
+  const up=ap.filter(x=>x.a>0).map(x=>MTZ_LBL[x.f]||x.f);
+  const dn=ap.filter(x=>x.a<0).map(x=>MTZ_LBL[x.f]||x.f);
+  return `<div style="font-size:11px;color:#557;margin:3px 0 7px" title="Las variables que más mueven su probabilidad comparado con el caballo promedio de ESTA carrera (el detalle completo está en la matriz). Si se apoya casi solo en una, vale preguntarse qué tan sólida es esa variable para este caballo.">⚙️ Su ${(raw.prob_modelo*100).toFixed(0)}% se apoya en ${up.length?`<b style="color:#1c7a3f">${up.join(' + ')}</b>`:'poco'}${dn.length?` · lo frena <b style="color:#c0392b">${dn.join(' + ')}</b>`:''}</div>`;
+}
 function render(){
   analisis=analizar(actual);
   pick=actual.es_handicap?pickModelo(analisis):null;
@@ -616,6 +637,7 @@ function render(){
       <div class="row-det"><div class="det">
         <div class="det-head">${h.chaquetilla?`<img src="${h.chaquetilla}" onerror="this.style.display='none'">`:''}
           <div class="info"><b>${h.nombre}</b><br>${h.padrillo?'Padre: '+h.padrillo:''}${h.edad?' · '+h.edad+' años':''}<br>Stud: <b>${h.stud||'-'}</b> · Prep: ${h.preparador||'-'}</div></div>
+        ${porqueMotor(h)}
         <div class="det-stats">
           <div class="it"><span class="k">Partida (N°)</span><span class="v">${h.mandil}</span></div>
           ${h.wr_padrillo_y!==null&&h.wr_padrillo_y!==undefined?`<div class="it"><span class="k">Padrillo gana</span><span class="v">${Math.round(h.wr_padrillo_y)}%</span></div>`:'<div class="it"><span class="k">Padrillo gana</span><span class="v">-</span></div>'}
