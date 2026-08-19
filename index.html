@@ -141,11 +141,97 @@
 </style>
 </head>
 <body>
-<header>
+<header style="position:relative">
   <div class="brand"><div class="logo">HCh</div>
     <h1>Programa Inteligente<small>Hipódromo Chile · análisis</small></h1></div>
   <div class="reunion" id="hdr-fecha"></div>
+  <button onclick="toggleGuia()" title="Guía: qué significa cada variable y símbolo" style="position:absolute;top:10px;right:12px;width:30px;height:30px;border-radius:50%;border:1.5px solid #d4af37;background:transparent;color:#d4af37;font-weight:bold;font-size:15px;cursor:pointer;line-height:1">?</button>
 </header>
+
+<!-- GUÍA (pedido de Rod 18-ago): el "torpedo" adentro de la app — variables y símbolos en cristiano -->
+<div id="guia-ovl" style="display:none;position:fixed;inset:0;background:rgba(6,18,40,.55);z-index:900" onclick="if(event.target===this)toggleGuia()">
+ <div style="max-width:640px;margin:0 auto;height:100%;overflow:auto;background:#f4f6fa;padding:0 14px 40px">
+  <div style="position:sticky;top:0;background:#0a2756;margin:0 -14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:5">
+    <b style="color:#d4af37;font-size:16px">📖 Guía del Programa</b>
+    <button onclick="toggleGuia()" style="background:transparent;border:1px solid #d4af37;color:#d4af37;border-radius:6px;padding:3px 10px;font-weight:bold;cursor:pointer">✕ cerrar</button>
+  </div>
+  <style>
+    .gv h3{color:#0a2756;font-size:15px;margin:18px 0 2px}.gv .gs{font-size:11.5px;color:#667;margin:0 0 8px}
+    .gv .gc{background:#fff;border:1px solid #d9dfe8;border-radius:9px;padding:2px 12px;margin-bottom:8px}
+    .gv .gr{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #edf0f5;font-size:13px;line-height:1.5;align-items:flex-start}
+    .gv .gc .gr:last-child{border-bottom:none}
+    .gv .gt{flex:0 0 76px;background:#0a2756;color:#f3e9c9;font-weight:bold;font-size:11px;border-radius:6px;padding:3px 5px;text-align:center;margin-top:1px}
+    .gv .gt.star{outline:2px solid #d4af37;outline-offset:1px}
+    .gv .gi{flex:0 0 76px;text-align:center;font-size:14px;font-weight:bold;margin-top:1px}
+    .gv .gd{flex:1;min-width:0;color:#223}.gv .gd small{display:block;color:#667;font-size:11.5px;margin-top:1px}
+    .gv .regla{background:#fff6e0;border:1px solid #e6d9a8;border-radius:9px;padding:9px 12px;margin:8px 0;font-size:12.5px;line-height:1.5}
+    .gv .vd2{color:#1c7a3f;font-weight:bold}.gv .rj2{color:#c0392b;font-weight:bold}
+  </style>
+  <div class="gv">
+  <div class="regla" style="margin-top:12px"><b>La matriz en 30 segundos:</b> cada columna es una variable del motor, ordenadas por peso (las primeras importan más). Cada celda = el puesto del caballo en ese factor dentro de su carrera: <span class="vd2">1 = el mejor (verde)</span> → <span class="rj2">último (rojo)</span>. Mantén el dedo sobre una celda para ver el valor real.</div>
+
+  <h3>Forma y campaña</h3><p class="gs">Cómo viene, medido solo con carreras del HCH</p>
+  <div class="gc">
+    <div class="gr"><div class="gt">Forma</div><div class="gd">Puesto promedio de sus últimas 3 carreras.<small>5,3 = viene llegando quinto-sexto.</small></div></div>
+    <div class="gr"><div class="gt">vs Rivales</div><div class="gd">Su historial comparado con el de los rivales de HOY.<small>Un caballo regular puede ser el mejor de un campo malo — esto lo detecta.</small></div></div>
+    <div class="gr"><div class="gt">Salto niv</div><div class="gd">Si hoy sube o baja de categoría vs lo que venía corriendo.</div></div>
+    <div class="gr"><div class="gt">Carreras</div><div class="gd">Experiencia: cuántas carreras lleva.</div></div>
+    <div class="gr"><div class="gt">Edad</div><div class="gd">Años del caballo.</div></div>
+  </div>
+
+  <h3>La distancia <span style="color:#d4af37;font-size:11px">★ validadas en 10 años</span></h3>
+  <div class="gc">
+    <div class="gr"><div class="gt star">Afinidad</div><div class="gd">¿La distancia de hoy le acomoda? Cómo llega en ESTOS metros vs su promedio general.<small>Positiva = acá rinde mejor que su costumbre. La variable más fuerte del motor.</small></div></div>
+    <div class="gr"><div class="gt">En dist</div><div class="gd">Puesto promedio cuando corrió estos mismos metros.</div></div>
+    <div class="gr"><div class="gt">Debut dist</div><div class="gd">Nunca corrió esta distancia.<small>Los debutantes de distancia rinden peor de lo que sugieren sus otros números.</small></div></div>
+  </div>
+
+  <h3>Velocidad</h3>
+  <div class="gc">
+    <div class="gr"><div class="gt">Tiempos</div><div class="gd">Qué tan rápido es vs los rivales de hoy (sus tiempos contra el tiempo típico de la distancia, solo carreras donde llegó top-5).<small>⚠️ Mirá el paréntesis del ⚙️: un rating de 1 figura añeja es anécdota, no dato.</small></div></div>
+  </div>
+
+  <h3>El video 🎥</h3><p class="gs">Nuestra lectura de las repeticiones — NO está en el programa oficial</p>
+  <div class="gc">
+    <div class="gr"><div class="gt">Avance</div><div class="gd">Posiciones que suele ganar durante la carrera. Positivo = pasa caballos.</div></div>
+    <div class="gr"><div class="gt">Remate</div><div class="gd">Posiciones que gana en los metros finales.</div></div>
+    <div class="gr"><div class="gt">Ubicación</div><div class="gd">Qué tan adelante se ubica temprano.</div></div>
+  </div>
+
+  <h3>La gente</h3>
+  <div class="gc">
+    <div class="gr"><div class="gt">Jinete</div><div class="gd">% de triunfos del jinete en el último año.</div></div>
+    <div class="gr"><div class="gt">Prep</div><div class="gd">% de triunfos del preparador (corral).</div></div>
+    <div class="gr"><div class="gt">Padrillo</div><div class="gd">% de triunfos de los hijos de su padre.</div></div>
+  </div>
+
+  <h3>La carrera de hoy</h3>
+  <div class="gc">
+    <div class="gr"><div class="gt">Peso</div><div class="gd">Kilos que carga comparado con el resto.</div></div>
+    <div class="gr"><div class="gt">Partida</div><div class="gd">Qué tan buena es su gatera.</div></div>
+    <div class="gr"><div class="gt">Rivales</div><div class="gd">Cuántos corren. Más caballos = más tráfico y azar.</div></div>
+  </div>
+
+  <h3>Los símbolos</h3>
+  <div class="gc">
+    <div class="gr"><div class="gi">🟢🟡🔴</div><div class="gd">Semáforo del índice (por premio).<small>🟢 bajo = el único terreno validado para apostar. 🔴 alto = paga miseria.</small></div></div>
+    <div class="gr"><div class="gi">🌙</div><div class="gd">Nocturna: el motor y el mercado aciertan menos. Cautela.</div></div>
+    <div class="gr"><div class="gi" style="font-size:11px">Punta<br>Acecho<br>Cierra</div><div class="gd">Estilo habitual (del video).<small>Si dice <b>Cierra→Acecho</b>: doble cara — suele correr atrás pero LLEGA cuando se ubica adelante. Mirá la partida.</small></div></div>
+    <div class="gr"><div class="gi">📍</div><div class="gd">Todas sus corridas previas en el HCH a los metros de HOY, con detalle desplegable (▼) y repe en YouTube.</div></div>
+    <div class="gr"><div class="gi">⚙️</div><div class="gd">De qué está hecho su %: <span class="vd2">lo que lo sube</span> · <span class="rj2">lo que lo frena</span>.<small><b>El paréntesis = de cuántos datos sale esa pata.</b> "(330 montas)" = sólido. "(1 fig · hace 11m) ⚠️" = anécdota: desconfiá. Como un promedio de notas: con 40 notas es real, con una no dice nada.</small></div></div>
+    <div class="gr"><div class="gi">★</div><div class="gd">El destacado del modelo cuando además hay valor contra el dividendo cargado.</div></div>
+    <div class="gr"><div class="gi">T5✂</div><div class="gd">Trifecta top-5 sin las combinaciones que pagarían menos de $20.000. El único filtro validado — solo en 🟢.</div></div>
+  </div>
+
+  <h3>Las 4 reglas de lectura</h3>
+  <div class="regla"><b>1. El paréntesis manda.</b> Pata con ⚠️ = puntaje posiblemente inflado.</div>
+  <div class="regla"><b>2. Los % son tímidos arriba.</b> Cuando el motor dice 15%, ese caballo históricamente gana ~22%. Los 3% sí son tan malos como dicen.</div>
+  <div class="regla"><b>3. El motor no ve todo:</b> otras pistas, estado de la pista, incidentes. Cuando tu ojo sabe algo que él no, gana tu ojo.</div>
+  <div class="regla"><b>4. Se juega en el verde</b>, con montos que no duelan. El juez es el 📈 historial "Oficial".</div>
+  </div>
+ </div>
+</div>
+<script>function toggleGuia(){const o=document.getElementById('guia-ovl');o.style.display=o.style.display==='none'?'block':'none';}</script>
 
 <div id="lista" class="wrap">
   <div class="search">
