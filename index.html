@@ -170,47 +170,9 @@
   <div class="gv">
   <div class="regla" style="margin-top:12px"><b>La matriz en 30 segundos:</b> cada columna es una variable del motor, ordenadas por peso (las primeras importan más). Cada celda = el puesto del caballo en ese factor dentro de su carrera: <span class="vd2">1 = el mejor (verde)</span> → <span class="rj2">último (rojo)</span>. Mantén el dedo sobre una celda para ver el valor real.</div>
 
-  <h3>Forma y campaña</h3><p class="gs">Cómo viene, medido solo con carreras del HCH</p>
-  <div class="gc">
-    <div class="gr"><div class="gt">Forma</div><div class="gd">Puesto promedio de sus últimas 3 carreras.<small>5,3 = viene llegando quinto-sexto.</small></div></div>
-    <div class="gr"><div class="gt">vs Rivales</div><div class="gd">Su historial comparado con el de los rivales de HOY.<small>Un caballo regular puede ser el mejor de un campo malo — esto lo detecta.</small></div></div>
-    <div class="gr"><div class="gt">Salto niv</div><div class="gd">Si hoy sube o baja de categoría vs lo que venía corriendo.</div></div>
-    <div class="gr"><div class="gt">Carreras</div><div class="gd">Experiencia: cuántas carreras lleva.</div></div>
-    <div class="gr"><div class="gt">Edad</div><div class="gd">Años del caballo.</div></div>
-  </div>
-
-  <h3>La distancia <span style="color:#d4af37;font-size:11px">★ validadas en 10 años</span></h3>
-  <div class="gc">
-    <div class="gr"><div class="gt star">Afinidad</div><div class="gd">¿La distancia de hoy le acomoda? Cómo llega en ESTOS metros vs su promedio general.<small>Positiva = acá rinde mejor que su costumbre. La variable más fuerte del motor.</small></div></div>
-    <div class="gr"><div class="gt">En dist</div><div class="gd">Puesto promedio cuando corrió estos mismos metros.</div></div>
-    <div class="gr"><div class="gt">Debut dist</div><div class="gd">Nunca corrió esta distancia.<small>Los debutantes de distancia rinden peor de lo que sugieren sus otros números.</small></div></div>
-  </div>
-
-  <h3>Velocidad</h3>
-  <div class="gc">
-    <div class="gr"><div class="gt">Tiempos</div><div class="gd">Qué tan rápido es vs los rivales de hoy (sus tiempos contra el tiempo típico de la distancia, solo carreras donde llegó top-5).<small>⚠️ Mirá el paréntesis del ⚙️: un rating de 1 figura añeja es anécdota, no dato.</small></div></div>
-  </div>
-
-  <h3>El video 🎥</h3><p class="gs">Nuestra lectura de las repeticiones — NO está en el programa oficial</p>
-  <div class="gc">
-    <div class="gr"><div class="gt">Avance</div><div class="gd">Posiciones que suele ganar durante la carrera. Positivo = pasa caballos.</div></div>
-    <div class="gr"><div class="gt">Remate</div><div class="gd">Posiciones que gana en los metros finales.</div></div>
-    <div class="gr"><div class="gt">Ubicación</div><div class="gd">Qué tan adelante se ubica temprano.</div></div>
-  </div>
-
-  <h3>La gente</h3>
-  <div class="gc">
-    <div class="gr"><div class="gt">Jinete</div><div class="gd">% de triunfos del jinete en el último año.</div></div>
-    <div class="gr"><div class="gt">Prep</div><div class="gd">% de triunfos del preparador (corral).</div></div>
-    <div class="gr"><div class="gt">Padrillo</div><div class="gd">% de triunfos de los hijos de su padre.</div></div>
-  </div>
-
-  <h3>La carrera de hoy</h3>
-  <div class="gc">
-    <div class="gr"><div class="gt">Peso</div><div class="gd">Kilos que carga comparado con el resto.</div></div>
-    <div class="gr"><div class="gt">Partida</div><div class="gd">Qué tan buena es su gatera.</div></div>
-    <div class="gr"><div class="gt">Rivales</div><div class="gd">Cuántos corren. Más caballos = más tráfico y azar.</div></div>
-  </div>
+  <h3>Las variables — en el mismo orden de la matriz</h3>
+  <p class="gs">Columna 1 = la que más pesa en el modelo hoy. El orden puede variar un poco entre jornadas (el motor se re-entrena cada vez). Las del video 🎥 (Avance, Remate, Ubicación) son lectura nuestra: NO están en el programa oficial.</p>
+  <div class="gc" id="guia-vars"></div>
 
   <h3>Los símbolos</h3>
   <div class="gc">
@@ -231,7 +193,26 @@
   </div>
  </div>
 </div>
-<script>function toggleGuia(){const o=document.getElementById('guia-ovl');o.style.display=o.style.display==='none'?'block':'none';}</script>
+<script>
+function toggleGuia(){
+  const o=document.getElementById('guia-ovl');
+  const abrir=o.style.display==='none';
+  if(abrir){
+    // armar la lista de variables EN EL ORDEN DE LA MATRIZ de esta jornada (por peso en el modelo)
+    try{
+      const gv=document.getElementById('guia-vars'), m=(typeof DATA!=='undefined')?DATA.modelo:null;
+      if(gv&&m){
+        const cols=m.features.map((k,i)=>({k,c:Math.abs(m.coef[i])})).sort((a,b)=>b.c-a.c);
+        const vis=cols.filter(x=>MTZ_OCULTAR.indexOf(x.k)<0), ocu=cols.filter(x=>MTZ_OCULTAR.indexOf(x.k)>=0);
+        const vid=['av_hist','rem_hist','adel_hist'];
+        gv.innerHTML=vis.map((x,i)=>`<div class="gr"><div class="gt${x.k==='dist_afinidad'?' star':''}">${MTZ_LBL[x.k]||x.k}</div><div class="gd">${vid.indexOf(x.k)>=0?'🎥 ':''}${MTZ_DEF[x.k]||''}<small>columna ${i+1} de la matriz</small></div></div>`).join('')
+          +ocu.map(x=>`<div class="gr" style="opacity:.7"><div class="gt">${MTZ_LBL[x.k]||x.k}</div><div class="gd">${MTZ_DEF[x.k]||''}<small>el motor la usa, pero la matriz no la muestra</small></div></div>`).join('');
+      }
+    }catch(e){}
+  }
+  o.style.display=abrir?'block':'none';
+}
+</script>
 
 <div id="lista" class="wrap">
   <div class="search">
@@ -512,7 +493,10 @@ const MTZ_DEF={pos_ult3:"Forma reciente: puesto promedio en sus últimas 3 carre
   rem_hist:"Del video: cuántas posiciones gana en el remate final.",
   adel_hist:"Del video: qué tan adelante suele ubicarse en los primeros metros.",
   dist_nueva:"Debuta en esta distancia (nunca la corrió). Validado en 10 años: los debutantes de distancia rinden peor de lo que sugieren sus otros números.",
-  dist_afinidad:"Cuánto MEJOR llega en ESTA distancia que su promedio general (positivo = la distancia le acomoda). La variable más fuerte del motor — idea de Rod."};
+  dist_afinidad:"Cuánto MEJOR llega en ESTA distancia que su promedio general (positivo = la distancia le acomoda). La variable más fuerte del motor — idea de Rod.",
+  distancia:"Los metros de la carrera de hoy.",
+  n_rivales:"Cuántos corren. Más caballos = más tráfico y más azar.",
+  parte_adelante:"Si larga en las gateras 1 a 4 (por los palos)."};
 const MTZ_OCULTAR=["parte_adelante","edad","exp_previa"]; // columnas que no aportan a la lectura (medido en walk-forward)
 function mtzVal(k,x){
   if(k.indexOf("winrate")>=0||k==="padrillo_winrate") return Math.round(x*100)+"%";
@@ -686,8 +670,10 @@ function render(){
       else{
         // detalle armado 100% desde NUESTRA base (no la ficha oficial): incluye lo que el programa
         // del hipodromo NO publica — estilo/avance/remate del video, estado de pista, y ▶ de carreras viejas.
+        // TODO el recuadro es el boton (pedido de Rod 18-ago): tocar cualquier parte despliega el detalle
+        // sin colapsar la ficha del caballo; los clics DENTRO del detalle desplegado no lo cierran.
         const detId=`pd-${actual.id}-${h.mandil}`;
-        const btn=`<a onclick="event.stopPropagation();const e=document.getElementById('${detId}');const on=e.style.display==='none';e.style.display=on?'block':'none';this.textContent=on?'▲ ocultar detalle':'▼ ver detalle';" style="color:#1c4f9c;font-weight:bold;cursor:pointer;font-size:11px;white-space:nowrap">▼ ver detalle</a>`;
+        const btn=`<span class="pd-btn" style="color:#1c4f9c;font-weight:bold;font-size:11px;white-space:nowrap">▼ ver detalle</span>`;
         const _em={puntero:['Punta','#1c7a3f'],acecho:['Acecho','#b8860b'],cerrador:['Cierra','#c0392b']};
         const pm=v=>v==null?'-':`<span style="color:${v>0?'#1c7a3f':(v<0?'#c0392b':'#889')};font-weight:bold">${v>0?'+':''}${v}</span>`;
         const HEAD=`<tr><th>Llegó</th><th title="Cómo corrió (del video)">Corrió</th><th title="Posiciones ganadas del primer tramo al final (del video) — esto NO está en el programa oficial">Avance</th><th title="Posiciones ganadas en el remate final (del video) — esto NO está en el programa oficial">Remate</th><th>Fecha</th><th>Pista</th><th>Part</th><th>Carga</th><th>Peso</th><th>Cps</th><th>T.gan</th><th title="Tiempo estimado del caballo (aprox)">T.est</th><th>Pagó</th><th>Jinete</th><th>Ganador</th><th>Ver</th></tr>`;
@@ -701,10 +687,10 @@ function render(){
             <td>${x.cps||'-'}</td><td style="font-weight:bold">${x.tgan||'-'}</td><td style="color:#999;font-style:italic">${x.test||'-'}</td>
             <td>${x.d?Number(x.d).toFixed(1):'-'}</td><td>${x.j||'-'}</td><td class="gana">${x.gan||'-'}</td><td>${vid}</td></tr>`;
         }).join('');
-        const det=`<div id="${detId}" style="display:none;margin-top:6px"><div style="font-size:10.5px;color:#557;margin-bottom:3px">Reciente → antigua · <b>Avance/Remate</b> vienen de nuestra lectura del video (no están en el programa oficial) · desliza ▸</div><div class="hist-scroll"><table class="hist">${HEAD}${rows}</table></div></div>`;
+        const det=`<div id="${detId}" class="pd-det" style="display:none;margin-top:6px"><div style="font-size:10.5px;color:#557;margin-bottom:3px">Reciente → antigua · <b>Avance/Remate</b> vienen de nuestra lectura del video (no están en el programa oficial) · desliza ▸</div><div class="hist-scroll"><table class="hist">${HEAD}${rows}</table></div></div>`;
         inner=`<b>${n} corrida${n>1?'s':''}</b> — ${g1} triunfo${g1!==1?'s':''}, ${pod} podio${pod!==1?'s':''}, promedio llega <b>${promL}°</b> &nbsp;${btn}${det}`;
       }
-      histHtml=`<div style="margin:6px 0;padding:7px 9px;background:#f4f7ee;border:1px solid #9ab87a;border-radius:7px;font-size:12px;color:#2d4a1e">📍 <b>En esta pista y distancia (HCH · ${actual.distancia}m):</b> ${inner}</div>`+histHtml;
+      histHtml=`<div style="margin:6px 0;padding:7px 9px;background:#f4f7ee;border:1px solid #9ab87a;border-radius:7px;font-size:12px;color:#2d4a1e;cursor:pointer" title="Toca para ver/ocultar el detalle de esas corridas" onclick="event.stopPropagation();if(event.target.closest('.pd-det'))return;const e=this.querySelector('.pd-det');if(!e)return;const a=this.querySelector('.pd-btn');const on=e.style.display==='none';e.style.display=on?'block':'none';if(a)a.textContent=on?'▲ ocultar detalle':'▼ ver detalle';">📍 <b>En esta pista y distancia (HCH · ${actual.distancia}m):</b> ${inner}</div>`+histHtml;
     }
 
     let colDer='';
