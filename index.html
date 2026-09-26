@@ -310,7 +310,7 @@ function renderLista(){
   const cont=document.getElementById('race-list');cont.innerHTML='';
   DATA.carreras.forEach((r,i)=>{
     const d=document.createElement('div');d.className='race-item'+(conM(r)?'':' cond');d.onclick=()=>abrir(i);
-    const badge=conM(r)?'<span class="badge h">Modelo</span>':'<span class="badge o">Solo ficha</span>';
+    const badge=conM(r)?'':'<span class="badge o">Solo ficha</span>';   // sep-26: todas tienen modelo -> sin etiqueta
     const luna=r.nocturna?' <span title="Carrera nocturna (luz artificial): el motor y el mercado aciertan menos acá" style="color:#d4af37">🌙</span>':'';
     // (chip 🎯 de "claridad" retirado 3-ago: el track record oficial no lo respaldo — ver _historial_partido.py.
     //  El dato carr.clara/carr.claridad se sigue guardando como interno, pero NO se muestra como señal de apuesta.)
