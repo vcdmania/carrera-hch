@@ -314,8 +314,9 @@ function renderLista(){
     const luna=r.nocturna?' <span title="Carrera nocturna (luz artificial): el motor y el mercado aciertan menos acá" style="color:#d4af37">🌙</span>':'';
     // (chip 🎯 de "claridad" retirado 3-ago: el track record oficial no lo respaldo — ver _historial_partido.py.
     //  El dato carr.clara/carr.claridad se sigue guardando como interno, pero NO se muestra como señal de apuesta.)
-    // universo "empate" que medimos: Handicap + de DÍA + 1000m -> pintado verde claro
-    if(r.es_handicap&&!r.nocturna&&Number(r.distancia)===1000) d.style.background='rgba(46,204,113,0.13)';
+    // rincon donde el motor historicamente anda mejor: Handicap + de DÍA + 1000m + INDICE BAJO -> verde claro.
+    // (26-sep-26, Rod: el verde con indice alto contradecia el semaforo; historial: verde+bajo trif t4 +32%, verde+alto -65%)
+    if(r.es_handicap&&!r.nocturna&&Number(r.distancia)===1000&&bandaStr(r.niv)==='bajo') d.style.background='rgba(46,204,113,0.13)';
     d.innerHTML=`<div style="min-width:0"><div class="n">Carrera ${r.correlativo} ${badge}${luna}</div>
       <div class="rnm">${r.nombre||''}</div>
       <div class="t">${r.tipo||''} · ${r.n_caballos} ejemplares${r.indice_carrera?' · índice '+r.indice_carrera+nivDot(r.niv):''}</div></div>
