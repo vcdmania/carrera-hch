@@ -114,6 +114,10 @@
   .det-stats .it .k{color:var(--gris)} .det-stats .it .v{font-weight:700}
   .note{font-size:11.5px;color:var(--verde);background:rgba(30,122,68,.07);padding:6px 9px;border-radius:4px;font-style:italic;border-left:2px solid var(--verde);margin:8px 0}
   .hist-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--borde);border-radius:5px;margin-top:4px}
+  /* recuadro pista+distancia: alto acotado -> la barra lateral queda a la vista; encabezado fijo al bajar */
+  .pd-scroll{max-height:440px;overflow:auto}
+  .pd-scroll th{position:sticky;top:0;z-index:2}
+  .pd-scroll th:first-child{z-index:3}
   .hist{border-collapse:collapse;font-size:11px;white-space:nowrap;min-width:100%}
   .hist th{font-family:'Oswald';font-weight:500;font-size:8.5px;text-transform:uppercase;color:var(--gris);text-align:left;padding:5px 7px;border-bottom:1px solid var(--borde);background:var(--papel-2)}
   .hist td{padding:5px 7px;border-bottom:1px solid var(--raya)}
@@ -775,7 +779,16 @@ function render(){
         const MES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         const fCamp=f=>{const p=String(f||'').split('/');return p.length===3?`${p[0]}${MES[Number(p[1])-1]||p[1]}${p[2]}`:(f||'-');};
         const enCamp={}; campReal.forEach(u=>{enCamp[Number(u.id_carrera)]=u;});
-        const rows=hpd.map(x=>{
+        // (31-oct-26, pedido de Rod) solo el ULTIMO AÑO movil, maximo 20; si no corrio en el ultimo año, sus ultimas 20.
+        // El resumen de arriba (corridas/triunfos/podios) sigue contando TODA su historia en la distancia.
+        const _fj=new Date((DATA.fecha||'')+'T12:00:00'), _hace1=isNaN(_fj)?null:new Date(_fj.getTime()-365*864e5);
+        const _fd=f=>{const p=String(f||'').split('/');return p.length===3?new Date(2000+Number(p[2]),Number(p[1])-1,Number(p[0])):null;};
+        let vis=_hace1?hpd.filter(x=>{const d=_fd(x.f);return d&&d>=_hace1;}):hpd.slice();
+        const sinAnio=!vis.length; if(sinAnio) vis=hpd.slice();
+        vis=vis.slice(-20);
+        const notaVis=sinAnio?`No corrió esta distancia en el último año: sus últimas ${vis.length} de ${n}`
+                             :`Último año: ${vis.length} de ${n} corridas${vis.length===20?' (máx. 20)':''}`;
+        const rows=vis.map(x=>{
           const u=enCamp[Number(x.idc)];
           if(u) return filaCamp(Object.assign({},u,{mr:u.mr||x.mr}));
           return filaCamp({lugar:(x.l!=null?x.l:(x.lt||null)),estilo:x.est,mr:x.mr,fecha:fCamp(x.f),dist:actual.distancia,
@@ -783,7 +796,7 @@ function render(){
             tiempo:x.tgan,tiempo_est:x.test,partida:x.part,carga:x.carga,peso_cab:x.pcab,div:x.d,jinete:x.j,ganador:x.gan,
             id_carrera:x.idc,video:x.vid,contratiempo:null});
         }).join('');
-        const det=`<div id="${detId}" class="pd-det" style="display:none;margin-top:6px"><div style="font-size:10.5px;color:#557;margin-bottom:3px">Antigua → reciente (igual que la campaña) · desliza ▸</div><div class="hist-scroll"><table class="hist">${CAMP_HEAD}${rows}</table></div></div>`;
+        const det=`<div id="${detId}" class="pd-det" style="display:none;margin-top:6px"><div style="font-size:10.5px;color:#557;margin-bottom:3px">${notaVis} · antigua → reciente · desliza ▸</div><div class="hist-scroll pd-scroll"><table class="hist">${CAMP_HEAD}${rows}</table></div></div>`;
         inner=`<b>${n} corrida${n>1?'s':''}</b> — ${g1} triunfo${g1!==1?'s':''}, ${pod} podio${pod!==1?'s':''}, promedio llega <b>${promL}°</b> &nbsp;${btn}${det}`;
       }
       histHtml=`<div style="margin:6px 0;padding:7px 9px;background:#f4f7ee;border:1px solid #9ab87a;border-radius:7px;font-size:12px;color:#2d4a1e;cursor:pointer" title="Toca para ver/ocultar el detalle de esas corridas" onclick="event.stopPropagation();if(event.target.closest('.pd-det'))return;const e=this.querySelector('.pd-det');if(!e)return;const a=this.querySelector('.pd-btn');const on=e.style.display==='none';e.style.display=on?'block':'none';if(a)a.textContent=on?'▲ ocultar detalle':'▼ ver detalle';">📍 <b>En esta pista y distancia (HCH · ${actual.distancia}m):</b> ${inner}</div>`+histHtml;
