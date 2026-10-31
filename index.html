@@ -760,7 +760,9 @@ function render(){
     // 📍 Historial en ESTA pista y distancia (pedido de Rod): resumen desde la base COMPLETA del HCH +
     // detalle desplegable con un clic, en el MISMO formato de la campaña (incluido el ▶ a YouTube).
     {
-      const hpd=h.hist_pd||[]; const n=hpd.length;
+      // (31-oct-26) fuera las inscripciones que NO corrio (lugar 101/102/103 en la API: sin llegada ni cuerpos); la
+      // campaña oficial tampoco las lista (verificado: 0 de 83). La 'U' (lugar 100) si corrio: llego ultimo.
+      const hpd=(h.hist_pd||[]).filter(x=>x.l!=null||x.lt); const n=hpd.length;
       const g1=hpd.filter(x=>x.l===1).length, pod=hpd.filter(x=>x.l&&x.l<=3).length;
       const conL=hpd.filter(x=>x.l);
       const promL=conL.length?(conL.reduce((s,x)=>s+x.l,0)/conL.length).toFixed(1):null;
